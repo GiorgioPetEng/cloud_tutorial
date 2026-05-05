@@ -102,8 +102,6 @@ todoList.addEventListener("click", (event) => {
   const nextButton = item?.nextElementSibling?.querySelector(".delete-button");
   const previousButton = item?.previousElementSibling?.querySelector(".delete-button");
 
-  item?.remove();
-
   if (nextButton instanceof HTMLButtonElement) {
     nextButton.focus();
   } else if (previousButton instanceof HTMLButtonElement) {
@@ -112,7 +110,18 @@ todoList.addEventListener("click", (event) => {
     todoInput.focus();
   }
 
-  updateHelperText();
+  if (item) {
+    item.classList.add("todo-item--exiting");
+    const removeItem = () => {
+      item.remove();
+      updateHelperText();
+    };
+    const fallback = setTimeout(removeItem, 300);
+    item.addEventListener("animationend", () => {
+      clearTimeout(fallback);
+      removeItem();
+    }, { once: true });
+  }
 });
 
 updateHelperText();
