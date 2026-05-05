@@ -12,6 +12,8 @@ const todoInput = getRequiredElement("#todo-input");
 const todoList = getRequiredElement("#todo-list");
 const helperText = getRequiredElement("#helper-text");
 const themeToggle = getRequiredElement("#theme-toggle");
+const countBadge = getRequiredElement("#count-badge");
+const emptyState = getRequiredElement("#empty-state");
 
 const DARK = "dark";
 const LIGHT = "light";
@@ -36,21 +38,59 @@ const setHelperMessage = (message, isError = false) => {
   helperText.classList.toggle("helper-text--error", isError);
 };
 
-const updateHelperText = () => {
-  setHelperMessage(todoList.childElementCount === 0
-    ? "Add your first task to get started."
-    : `${todoList.childElementCount} task${todoList.childElementCount === 1 ? "" : "s"} in the list.`);
+const updateCountBadge = () => {
+  const count = todoList.childElementCount;
+  countBadge.textContent = count === 0 ? "0 tasks" : count === 1 ? "1 task" : `${count} tasks`;
+  emptyState.classList.toggle("empty-state--visible", count === 0);
+  emptyState.setAttribute("aria-hidden", String(count !== 0));
 };
 
-const createTodoItem = (value) => {
+const updateHelperText = () => {
+  const count = todoList.childElementCount;
+  setHelperMessage(count === 0
+    ? "Add your first task to get started."
+    : `${count} task${count === 1 ? "" : "s"} in the list.`);
+  updateCountBadge();
+};
+
+const saveTodos = () => {
+  const todos = Array.from(todoList.children).map((item) => ({
+    text: item.querySelector(".todo-text")?.textContent ?? "",
+    completed: item.classList.contains("todo-item--completed")
+  }));
+  localStorage.setItem("todos", JSON.stringify(todos));
+};
+
+const loadTodos = () => {
+  try {
+    const stored = localStorage.getItem("todos");
+    if (!stored) return;
+
+    const todos = JSON.parse(stored);
+    if (!Array.isArray(todos)) return;
+
+    todos.forEach(({ text, completed }) => {
+      if (text) {
+        todoList.append(createTodoItem(text, completed));
+      }
+    });
+  } catch (error) {
+    console.error("Failed to load todos from localStorage:", error);
+  }
+};
+
+const createTodoItem = (value, completed = false) => {
   const item = document.createElement("li");
   item.className = "todo-item";
+  if (completed) {
+    item.classList.add("todo-item--completed");
+  }
 
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "toggle-button";
-  toggle.setAttribute("aria-label", `Mark "${value}" as complete`);
-  toggle.setAttribute("aria-pressed", "false");
+  toggle.setAttribute("aria-label", completed ? `Unmark "${value}" as complete` : `Mark "${value}" as complete`);
+  toggle.setAttribute("aria-pressed", String(completed));
 
   const text = document.createElement("span");
   text.className = "todo-text";
@@ -78,6 +118,7 @@ todoForm.addEventListener("submit", (event) => {
 
   todoList.append(createTodoItem(value));
   updateHelperText();
+  saveTodos();
   todoForm.reset();
   todoInput.focus();
 });
@@ -90,7 +131,8 @@ todoList.addEventListener("click", (event) => {
     const completed = item?.classList.toggle("todo-item--completed");
     target.setAttribute("aria-pressed", String(completed));
     target.setAttribute("aria-label",
-      `${completed ? "Mark" : "Unmark"} "${item?.querySelector(".todo-text")?.textContent}" as complete`);
+      `${completed ? "Unmark" : "Mark"} "${item?.querySelector(".todo-text")?.textContent}" as complete`);
+    saveTodos();
     return;
   }
 
@@ -115,6 +157,7 @@ todoList.addEventListener("click", (event) => {
     const removeItem = () => {
       item.remove();
       updateHelperText();
+      saveTodos();
     };
     const fallback = setTimeout(removeItem, 300);
     item.addEventListener("animationend", () => {
@@ -124,4 +167,5 @@ todoList.addEventListener("click", (event) => {
   }
 });
 
+loadTodos();
 updateHelperText();
