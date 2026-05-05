@@ -22,6 +22,7 @@
             <p class="subtitle">Capture a task, keep the list tidy, and clear items when they are done.</p>
           </div>
           <div class="status-badge" aria-hidden="true">Simple JS</div>
+          <span id="progress-badge" class="progress-badge" aria-live="polite" hidden></span>
           <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode">🌙</button>
         </div>
 
@@ -40,6 +41,10 @@
 
         <p class="helper-text" id="helper-text" role="status">Add your first task to get started.</p>
         <ul class="todo-list" id="todo-list" aria-live="polite"></ul>
+        <div id="empty-state" class="empty-state" aria-hidden="true" hidden>
+          <span class="empty-state__icon">📋</span>
+          <p class="empty-state__message">Your list is empty — add a task above to get started!</p>
+        </div>
       </section>
     </main>
 

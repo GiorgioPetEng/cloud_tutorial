@@ -11,6 +11,8 @@ const todoForm = getRequiredElement("#todo-form");
 const todoInput = getRequiredElement("#todo-input");
 const todoList = getRequiredElement("#todo-list");
 const helperText = getRequiredElement("#helper-text");
+const emptyState = getRequiredElement("#empty-state");
+const progressBadge = getRequiredElement("#progress-badge");
 const themeToggle = getRequiredElement("#theme-toggle");
 
 const DARK = "dark";
@@ -36,21 +38,49 @@ const setHelperMessage = (message, isError = false) => {
   helperText.classList.toggle("helper-text--error", isError);
 };
 
-const updateHelperText = () => {
-  setHelperMessage(todoList.childElementCount === 0
-    ? "Add your first task to get started."
-    : `${todoList.childElementCount} task${todoList.childElementCount === 1 ? "" : "s"} in the list.`);
+const saveTodos = () => {
+  const todos = Array.from(todoList.querySelectorAll(".todo-item")).map((item) => ({
+    text: item.querySelector(".todo-text")?.textContent ?? "",
+    completed: item.classList.contains("todo-item--completed"),
+  }));
+
+  localStorage.setItem("todos", JSON.stringify(todos));
 };
 
-const createTodoItem = (value) => {
+const updateHelperText = () => {
+  const total = todoList.childElementCount;
+  const completed = todoList.querySelectorAll(".todo-item--completed").length;
+
+  setHelperMessage(total === 0
+    ? "Add your first task to get started."
+    : `${total} task${total === 1 ? "" : "s"} in the list.`);
+
+  if (total === 0) {
+    emptyState.removeAttribute("hidden");
+    emptyState.setAttribute("aria-hidden", "false");
+    progressBadge.setAttribute("hidden", "");
+    return;
+  }
+
+  emptyState.setAttribute("hidden", "");
+  emptyState.setAttribute("aria-hidden", "true");
+  progressBadge.removeAttribute("hidden");
+  progressBadge.textContent = `${completed} of ${total} done`;
+};
+
+const createTodoItem = (value, completed = false) => {
   const item = document.createElement("li");
   item.className = "todo-item";
 
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "toggle-button";
-  toggle.setAttribute("aria-label", `Mark "${value}" as complete`);
-  toggle.setAttribute("aria-pressed", "false");
+  toggle.setAttribute("aria-label", `${completed ? "Unmark" : "Mark"} "${value}" as complete`);
+  toggle.setAttribute("aria-pressed", String(completed));
+
+  if (completed) {
+    item.classList.add("todo-item--completed");
+  }
 
   const text = document.createElement("span");
   text.className = "todo-text";
@@ -66,6 +96,16 @@ const createTodoItem = (value) => {
   return item;
 };
 
+const loadTodos = () => {
+  const todos = JSON.parse(localStorage.getItem("todos") ?? "[]");
+
+  todos.forEach(({ text, completed }) => {
+    todoList.append(createTodoItem(text, completed));
+  });
+
+  updateHelperText();
+};
+
 todoForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -77,6 +117,7 @@ todoForm.addEventListener("submit", (event) => {
   }
 
   todoList.append(createTodoItem(value));
+  saveTodos();
   updateHelperText();
   todoForm.reset();
   todoInput.focus();
@@ -90,7 +131,9 @@ todoList.addEventListener("click", (event) => {
     const completed = item?.classList.toggle("todo-item--completed");
     target.setAttribute("aria-pressed", String(completed));
     target.setAttribute("aria-label",
-      `${completed ? "Mark" : "Unmark"} "${item?.querySelector(".todo-text")?.textContent}" as complete`);
+      `${completed ? "Unmark" : "Mark"} "${item?.querySelector(".todo-text")?.textContent}" as complete`);
+    saveTodos();
+    updateHelperText();
     return;
   }
 
@@ -114,6 +157,7 @@ todoList.addEventListener("click", (event) => {
     item.classList.add("todo-item--exiting");
     const removeItem = () => {
       item.remove();
+      saveTodos();
       updateHelperText();
     };
     const fallback = setTimeout(removeItem, 300);
@@ -124,4 +168,4 @@ todoList.addEventListener("click", (event) => {
   }
 });
 
-updateHelperText();
+loadTodos();
