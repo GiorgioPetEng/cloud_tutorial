@@ -112,9 +112,14 @@ todoList.addEventListener("click", (event) => {
 
   if (item) {
     item.classList.add("todo-item--exiting");
-    item.addEventListener("animationend", () => {
+    const removeItem = () => {
       item.remove();
       updateHelperText();
+    };
+    const fallback = setTimeout(removeItem, 300);
+    item.addEventListener("animationend", () => {
+      clearTimeout(fallback);
+      removeItem();
     }, { once: true });
   }
 });
