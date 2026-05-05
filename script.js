@@ -11,6 +11,25 @@ const todoForm = getRequiredElement("#todo-form");
 const todoInput = getRequiredElement("#todo-input");
 const todoList = getRequiredElement("#todo-list");
 const helperText = getRequiredElement("#helper-text");
+const themeToggle = getRequiredElement("#theme-toggle");
+
+const DARK = "dark";
+const LIGHT = "light";
+
+const applyTheme = (theme) => {
+  document.documentElement.dataset.theme = theme;
+  themeToggle.textContent = theme === DARK ? "☀️" : "🌙";
+  themeToggle.setAttribute("aria-label", theme === DARK ? "Switch to light mode" : "Switch to dark mode");
+};
+
+const savedTheme = localStorage.getItem("theme") ?? LIGHT;
+applyTheme(savedTheme);
+
+themeToggle.addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === DARK ? LIGHT : DARK;
+  applyTheme(next);
+  localStorage.setItem("theme", next);
+});
 
 const setHelperMessage = (message, isError = false) => {
   helperText.textContent = message;
